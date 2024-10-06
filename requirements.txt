@@ -1,0 +1,10 @@
+flask~=3.0.3
+flask-wtf
+WTForms~=3.1.2
+flask-login
+email-validator
+pydantic_settings
+sqlalchemy
+alembic
+psycopg
+werkzeug
