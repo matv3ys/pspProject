@@ -26,3 +26,6 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+# PASSWORD=fibejeafobvrxmdh

@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if current_user.is_authenticated %}
 <video autoplay muted loop id="myVideo">
-  <source src="static/putin.mp4" type="video/mp4">
+  <source src="static/summer.mp4" type="video/mp4">
 </video>
+{% else %}
+<video autoplay muted loop id="myVideo">
+  <source src="static/winter.mp4" type="video/mp4">
+</video>
+{% endif %}
 {% endblock %}

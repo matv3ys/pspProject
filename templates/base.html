@@ -38,6 +38,18 @@
         </div>
         <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
             <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item" id="nav-login">
+                  <a class="nav-link btn btn-primary text-uppercase" href="/profile" style="width: 140px;">
+                    Профиль
+                  </a>
+                </li>
+                <li class="nav-item" id="nav-signup">
+                   <a class="nav-link btn btn-danger text-uppercase" href="/logout" style="width: 140px;">
+                     Выйти
+                   </a>
+                </li>
+                {% else %}
                 <li class="nav-item" id="nav-login">
                   <a class="nav-link btn btn-primary text-uppercase" href="/login" style="width: 80px;">
                     Войти
@@ -48,6 +60,7 @@
                      Регистрация
                    </a>
                 </li>
+                {% endif %}
             </ul>
         </div>
     </div>

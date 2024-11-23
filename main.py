@@ -2,7 +2,9 @@ import time
 from random import randint
 
 from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
-from flask_login import current_user
+from flask_login import LoginManager, login_user, current_user, login_required, logout_user
+from sqlalchemy.sql.functions import register_function
+
 from forms import LoginForm, RegisterForm, RegisterConfForm
 from database import session_factory
 from models import UserTable
@@ -11,6 +13,8 @@ from werkzeug.security import generate_password_hash
 from utils import send_code_email
 
 app = Flask(__name__)
+login_manager = LoginManager()
+login_manager.init_app(app)
 app.config['SECRET_KEY'] = "kek"
 
 def main():
@@ -54,14 +58,27 @@ def join():
             "code": code
         }
         print(code)
-        #send_code_email(code, form.email.data)
+        send_code_email(code, form.email.data)
 
         return redirect('/confirm_email')
     return render_template('join.html', title='Регистрация', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect('/')
+
     form = LoginForm()
+    if form.validate_on_submit():
+        with session_factory() as db_session:
+            user = db_session.query(UserTable).filter(UserTable.login == form.login.data).first()
+            if user and user.check_password(form.password.data):
+                login_user(user, remember=form.remember_me.data)
+                return redirect("/")
+        return render_template('login.html', title='Авторизация',
+                               message="Неправильный логин или пароль",
+                               form=form)
+
     return render_template('login.html', title='Авторизация', form=form)
 
 @app.route('/confirm_email', methods=['GET', 'POST'])
@@ -71,6 +88,10 @@ def confirm_email():
                                 referrer.endswith("/confirm_email") or
                                 referrer.endswith("/resend_conf_code")):
         return redirect("/")
+
+    message = None
+    if referrer.endswith("/confirm_email"):
+        message = session.get("message")
 
     form = RegisterConfForm()
 
@@ -97,7 +118,10 @@ def confirm_email():
             db_session.commit()
         return redirect("/login")
 
-    return render_template("register_conf.html", title="Подтверждение регистрации", form=form)
+    if message is None:
+        message=''
+    return render_template("register_conf.html", title="Подтверждение регистрации",
+                           form=form, message=message)
 
 @app.route('/resend_conf_code', methods=['GET'])
 def resend_conf_code():
@@ -110,9 +134,25 @@ def resend_conf_code():
     code = randint(100000, 999999)
     conf_data["code"] = code
     print(code)
-    #send_code_email(code, form.email.data)
+    send_code_email(code, conf_data["email"])
     session["confirm_data"] = conf_data
+    session["message"] = "Новый код выслан"
     return redirect("/confirm_email")
+
+@login_manager.user_loader
+def load_user(user_id):
+    """ обработчик входа пользователя """
+
+    session = session_factory()
+    return session.query(UserTable).get(user_id)
+
+@app.route('/logout')
+@login_required
+def logout():
+    """ обработчик выхода пользователя """
+
+    logout_user()
+    return redirect("/")
 
 
 if __name__ == "__main__":
