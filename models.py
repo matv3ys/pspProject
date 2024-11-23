@@ -9,18 +9,26 @@ from flask_login import UserMixin
 
 Base = declarative_base()
 intpk = Annotated[int, mapped_column(primary_key=True)]
+int_not_unique = Annotated[int, mapped_column(unique=False)]
 str_unique = Annotated[str, mapped_column(unique=True)]
 str_not_unique = Annotated[str, mapped_column(unique=False)]
 bool_not_unique = Annotated[bool, mapped_column(unique=False, nullable=False)]
 created_at = Annotated[datetime.datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]
 
-u_g_table = Table(
-    "u_g_table",
-    Base.metadata,
-    Column("user_id", ForeignKey("UserTable.user_id"), primary_key=True),
-    Column("group_id", ForeignKey("GroupTable.group_id"), primary_key=True),
-    Column("status", Integer)
-)
+# u_g_table = Table(
+#     "u_g_table",
+#     Base.metadata,
+#     Column("user_id", ForeignKey("UserTable.user_id"), primary_key=True),
+#     Column("group_id", ForeignKey("GroupTable.group_id"), primary_key=True),
+#     Column("status", Integer)
+# )
+
+class UserGroupTable(Base):
+    __tablename__ = "UserGroupTable"
+    user_id: Mapped[intpk] = mapped_column(ForeignKey("UserTable.user_id"))
+    group_id: Mapped[intpk] = mapped_column(ForeignKey("GroupTable.group_id"))
+    status: Mapped[int_not_unique]
+
 
 class UserTable(Base, UserMixin):
     __tablename__ = "UserTable"
@@ -40,7 +48,7 @@ class UserTable(Base, UserMixin):
     hashed_password: Mapped[str_not_unique]
     created_at:      Mapped[created_at]
     groups: Mapped[List[lambda: GroupTable]] = relationship(   # lambda for cross declaration
-        secondary=u_g_table, back_populates="members"
+        secondary="UserGroupTable", back_populates="members"
     )
 
 class GroupTable(Base):
@@ -48,8 +56,9 @@ class GroupTable(Base):
 
     group_id:        Mapped[intpk]
     group_name:      Mapped[str_unique]
+    owner_id:        Mapped[int_not_unique] = mapped_column(ForeignKey("UserTable.user_id"))
     members: Mapped[List[UserTable]] = relationship(
-        secondary=u_g_table, back_populates="groups"
+        secondary="UserGroupTable", back_populates="groups"
     )
 
 

@@ -31,3 +31,9 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
+
+class CreateGroupForm(FlaskForm):
+    """ форма подтверждения регистрации """
+
+    name = StringField('Имя группы', validators=[DataRequired("Введите название группы")])
+    submit = SubmitField('Создать группу')

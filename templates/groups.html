@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="container mt-4">
+              <div class="column">
+                <h1>Мои группы</h1>
+                {% if current_user.is_authenticated and current_user.is_organizer %}
+                <div style="margin-bottom: 20px;" >
+                  <a class="btn btn-success" href="/create_group">
+                      Создать группу
+                  </a><br>
+                </div>
+                {% endif %}
+
+                {% for item in user_g %}
+                  <div class="col-12 mb-4">
+                      <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{item[1]}}</h5>
+                              {% if item[4] == current_user.user_id %}
+                              <a class="btn btn-info" href="/manage_group">
+                                Управлять
+                              </a>
+                              {% else %}
+                              <a class="btn btn-danger" href="/group_button?action=leave&group_id={{item[0]}}">
+                                Покинуть
+                              </a>
+                            {% endif %}
+                          </div>
+                      </div>
+                  </div>
+                {% endfor %}
+                <h1>Все группы</h1>
+                {% for item in other_g %}
+                  <div class="col-12 mb-4">
+                      <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{item[1]}}</h5>
+                            {% if not item[3]  %}
+                              <a class="btn btn-success" href="/group_button?action=join&group_id={{item[0]}}">
+                                Вступить
+                              </a>
+                            {% else %}
+                              <button type="button" class="btn btn-primary">
+                                Заявка отправлена
+                              </button>
+                            {% endif %}
+                          </div>
+                      </div>
+                  </div>
+                {% endfor %}
+
+                  <!-- Добавьте дополнительные группы по аналогии -->
+              </div>
+          </div>
+        </main>
+    </section>
+</div>
+{% endblock %}

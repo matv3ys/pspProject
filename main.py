@@ -5,9 +5,9 @@ from flask import Flask, render_template, url_for, redirect, request, abort, ses
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function
 
-from forms import LoginForm, RegisterForm, RegisterConfForm
+from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm
 from database import session_factory
-from models import UserTable, GroupTable, u_g_table
+from models import UserTable, GroupTable, UserGroupTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -29,10 +29,101 @@ def main_page():
 
 @app.route('/groups', methods=['GET', 'POST'])
 def groups():
-    db_session = session_factory()
-    groups = db_session.query(GroupTable).join(u_g_table)
-    print()
+    '''
+        1 - requested
+        2 - participant
+    '''
 
+    if not current_user.is_authenticated:
+        return redirect('/')
+    user_id = session["user_id"]
+    db_session = session_factory()
+
+    groups = (db_session.query(
+        GroupTable.group_id,
+        GroupTable.group_name,
+        UserGroupTable.user_id,
+        UserGroupTable.status,
+        GroupTable.owner_id
+    ).join(
+        UserGroupTable,
+        (GroupTable.group_id == UserGroupTable.group_id) & (UserGroupTable.user_id == current_user.user_id),
+        isouter=True
+    ).all())
+
+    user_groups = [i for i in groups if i[3] == 2 or i[4] == current_user.user_id]
+    other_groups = [i for i in groups if i[3] != 2]
+
+    return render_template("groups.html", user_g=user_groups,
+                           other_g=other_groups, title='Блог')
+
+@app.route('/group_button', methods=['GET', 'POST'])
+def group_button():
+    action = request.args.get("action")
+    group_id = request.args.get("group_id")
+    if action == "leave":
+        with session_factory() as db_session:
+            row = db_session.query(UserGroupTable).filter(
+                UserGroupTable.group_id == int(group_id),
+                UserGroupTable.user_id == current_user.user_id
+            ).first()
+            if row and row.status == 2:
+                db_session.delete(row)
+                db_session.commit()
+    elif action == "join":
+        with session_factory() as db_session:
+            row = db_session.query(UserGroupTable).filter(
+                UserGroupTable.group_id == int(group_id),
+                UserGroupTable.user_id == current_user.user_id
+            ).first()
+            if not row:
+                row = UserGroupTable(user_id=current_user.user_id, group_id=group_id, status=1)
+                db_session.add(row)
+                db_session.commit()
+
+
+    return redirect("/groups")
+
+
+@app.route('/create_group', methods=['GET', 'POST'])
+def create_group():
+    """ обработчик создания группы """
+
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    form = CreateGroupForm()
+    if form.validate_on_submit():
+        with session_factory() as db_session:
+            if db_session.query(GroupTable).filter(GroupTable.group_name == form.name.data).first():
+                return render_template('create_group.html', title='Создать группу',
+                                       form=form,
+                                       message="Имя группы занято",)
+
+            group = GroupTable(
+                group_name=form.name.data,
+                owner_id=current_user.user_id
+            )
+
+            db_session.add(group)
+            db_session.commit()
+        return redirect("/groups")
+    #
+    #     code = randint(100000, 999999)
+    #
+    #     session["confirm_data"] = {
+    #         "login": form.login.data,
+    #         "email": form.email.data,
+    #         "surname": form.surname.data,
+    #         "name": form.name.data,
+    #         "hashed_password": generate_password_hash(form.password.data),
+    #         "code": code
+    #     }
+    #     print(code)
+    #     send_code_email(code, form.email.data)
+    #
+    #     return redirect('/confirm_email')
+    return render_template('create_group.html', title='Создать группу', form=form)
 
 @app.route('/join', methods=['GET', 'POST'])
 def join():
@@ -79,6 +170,7 @@ def login():
         with session_factory() as db_session:
             user = db_session.query(UserTable).filter(UserTable.login == form.login.data).first()
             if user and user.check_password(form.password.data):
+                session["user_id"] = user.user_id
                 login_user(user, remember=form.remember_me.data)
                 return redirect("/")
         return render_template('login.html', title='Авторизация',
