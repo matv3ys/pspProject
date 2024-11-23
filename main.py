@@ -7,7 +7,7 @@ from sqlalchemy.sql.functions import register_function
 
 from forms import LoginForm, RegisterForm, RegisterConfForm
 from database import session_factory
-from models import UserTable
+from models import UserTable, GroupTable, u_g_table
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -26,6 +26,12 @@ def main_page():
 
     return render_template('home.html', title='PrivetMIR',
                            css=url_for('static', filename='css/home_style.css'))
+
+@app.route('/groups', methods=['GET', 'POST'])
+def groups():
+    db_session = session_factory()
+    groups = db_session.query(GroupTable).join(u_g_table)
+    print()
 
 
 @app.route('/join', methods=['GET', 'POST'])
@@ -111,6 +117,7 @@ def confirm_email():
             email=confirm_data["email"],
             surname=confirm_data["surname"],
             name=confirm_data["name"],
+            is_organizer=False,
             hashed_password=confirm_data["hashed_password"]
         )
         with session_factory() as db_session:
