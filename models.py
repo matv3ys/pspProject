@@ -15,13 +15,6 @@ str_not_unique = Annotated[str, mapped_column(unique=False)]
 bool_not_unique = Annotated[bool, mapped_column(unique=False, nullable=False)]
 created_at = Annotated[datetime.datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]
 
-# u_g_table = Table(
-#     "u_g_table",
-#     Base.metadata,
-#     Column("user_id", ForeignKey("UserTable.user_id"), primary_key=True),
-#     Column("group_id", ForeignKey("GroupTable.group_id"), primary_key=True),
-#     Column("status", Integer)
-# )
 
 class UserGroupTable(Base):
     __tablename__ = "UserGroupTable"

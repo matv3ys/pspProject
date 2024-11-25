@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="container mt-4">
+              <div class="column">
+                <h1>{{group_name}}</h1>
+
+                  <h2>Заявки</h2>
+                  {% for item in member_reqs %}
+                  <div class="col-12 mb-4">
+                     <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{item.surname}} {{item.name}}</h5>
+                              <p class="card-text">@{{item.login}}</p>
+                              <a class="btn btn-success" href="/manage_group_button?group_name={{group_name}}&group_id={{group_id}}&user_id={{item.user_id}}&action=accept">
+                                Принять
+                              </a>
+                              <a class="btn btn-danger" href="/manage_group_button?group_name={{group_name}}&group_id={{group_id}}&user_id={{item.user_id}}&action=reject">
+                                Отклонить
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+                  <h2>Участники</h2>
+                  {% for item in members %}
+                  <div class="col-12 mb-4">
+                     <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{item.surname}} {{item.name}}</h5>
+                              <p class="card-text">@{{item.login}}</p>
+                              <a class="btn btn-danger" href="/manage_group_button?group_name={{group_name}}&group_id={{group_id}}&user_id={{item.user_id}}&action=exclude">
+                                Исключить
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+
+              </div>
+          </div>
+        </main>
+    </section>
+</div>
+{% endblock %}

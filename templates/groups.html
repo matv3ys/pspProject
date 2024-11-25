@@ -19,13 +19,14 @@
                   <div class="col-12 mb-4">
                       <div class="card">
                           <div class="card-body">
-                              <h5 class="card-title">{{item[1]}}</h5>
-                              {% if item[4] == current_user.user_id %}
-                              <a class="btn btn-info" href="/manage_group">
+                              <h5 class="card-title">{{item.group_name}}</h5>
+                              <p class="card-text">Владелец: {{item.owner_surname}} {{item.owner_name}}</p>
+                              {% if item.owner_id == current_user.user_id %}
+                              <a class="btn btn-info" href="/manage_group?group_name={{item.group_name}}&group_id={{item.group_id}}">
                                 Управлять
                               </a>
                               {% else %}
-                              <a class="btn btn-danger" href="/group_button?action=leave&group_id={{item[0]}}">
+                              <a class="btn btn-danger" href="/group_button?action=leave&group_id={{item.group_id}}">
                                 Покинуть
                               </a>
                             {% endif %}
@@ -38,9 +39,10 @@
                   <div class="col-12 mb-4">
                       <div class="card">
                           <div class="card-body">
-                              <h5 class="card-title">{{item[1]}}</h5>
-                            {% if not item[3]  %}
-                              <a class="btn btn-success" href="/group_button?action=join&group_id={{item[0]}}">
+                              <h5 class="card-title">{{item.group_name}}</h5>
+                              <p class="card-text">Владелец: {{item.owner_surname}} {{item.owner_name}}</p>
+                              {% if not item.status %}
+                              <a class="btn btn-success" href="/group_button?action=join&group_id={{item.group_id}}">
                                 Вступить
                               </a>
                             {% else %}
