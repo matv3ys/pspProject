@@ -17,6 +17,11 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="groups">Группы</a>
                 </li>
+                {% if current_user.is_organizer %}
+                <li class="nav-item active">
+                    <a class="nav-link" href="tasks">Задачи</a>
+                </li>
+                {% endif %}
                 {% endif %}
             </ul>
         </div>
@@ -30,7 +35,7 @@
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item" id="nav-login">
-                  <a class="nav-link btn btn-primary text-uppercase" href="/profile" style="width: 140px;">
+                 <a class="nav-link btn btn-primary text-uppercase"  style="width: 140px;">
                     Профиль
                   </a>
                 </li>

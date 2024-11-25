@@ -1,3 +1,5 @@
+from enum import unique
+
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -10,6 +12,7 @@ from flask_login import UserMixin
 Base = declarative_base()
 intpk = Annotated[int, mapped_column(primary_key=True)]
 int_not_unique = Annotated[int, mapped_column(unique=False)]
+float_not_unique = Annotated[float, mapped_column(unique=False)]
 str_unique = Annotated[str, mapped_column(unique=True)]
 str_not_unique = Annotated[str, mapped_column(unique=False)]
 bool_not_unique = Annotated[bool, mapped_column(unique=False, nullable=False)]
@@ -50,9 +53,34 @@ class GroupTable(Base):
     group_id:        Mapped[intpk]
     group_name:      Mapped[str_unique]
     owner_id:        Mapped[int_not_unique] = mapped_column(ForeignKey("UserTable.user_id"))
+    created_at:      Mapped[created_at]
     members: Mapped[List[UserTable]] = relationship(
         secondary="UserGroupTable", back_populates="groups"
     )
+
+class TaskTable(Base):
+    __tablename__ = "TaskTable"
+
+    task_id:        Mapped[intpk]
+    author_id:      Mapped[int_not_unique] = mapped_column(ForeignKey("UserTable.user_id"))
+    title:          Mapped[str_not_unique]
+    time_limit:     Mapped[int_not_unique]
+    description:    Mapped[str_not_unique]
+    input_info:     Mapped[str_not_unique]
+    output_info:    Mapped[str_not_unique]
+    created_at:     Mapped[created_at]
+
+class TestTable(Base):
+    __tablename__ = "TestTable"
+
+    test_id:        Mapped[intpk]
+    task_id:        Mapped[int_not_unique] = mapped_column(ForeignKey("TaskTable.task_id"))
+    test_num:       Mapped[int_not_unique]
+    input_data:     Mapped[str_not_unique]
+    output_data:    Mapped[str_not_unique]
+    is_open:        Mapped[bool_not_unique]
+    created_at:     Mapped[created_at]
+
 
 
 # https://stackoverflow.com/questions/5756559/how-to-build-many-to-many-relations-using-sqlalchemy-a-good-example

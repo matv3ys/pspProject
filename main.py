@@ -1,13 +1,16 @@
 import time
 from random import randint
+import uuid
+import os
+import zipfile
 
 from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function
 
-from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm
+from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm
 from database import session_factory
-from models import UserTable, GroupTable, UserGroupTable
+from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -219,6 +222,80 @@ def manage_group_button():
     return redirect(f"/manage_group?group_name={group_name}&group_id={group_id}")
 
 
+@app.route('/create_task', methods=['GET', 'POST'])
+def create_task():
+    """ обработчик создания группы """
+
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    form = CreateTaskForm()
+    if form.validate_on_submit():
+        f = form.tests.data
+        filename = str(uuid.uuid4())
+        fpath = os.path.join('static', 'tmp', filename)
+        f.save(fpath)
+
+        with zipfile.ZipFile(fpath, "r") as zf:
+            names = zf.namelist()
+            if len(names) % 2 != 0:
+                os.remove(fpath)
+                return render_template('create_task.html', title='Создать задачу',
+                                       form=form, message="Ошибка: нечетное количество файлов в архиве")
+
+            tests = []
+            q_of_tests = len(names) // 2
+            for i in range(1, q_of_tests + 1):
+                in_name = f"in_{i}.txt"
+                out_name = f"out_{i}.txt"
+                if in_name not in names:
+                    os.remove(fpath)
+                    return render_template('create_task.html', title='Создать задачу',
+                                           form=form, message=f"Ошибка: отсутствует файл {in_name}")
+                if out_name not in names:
+                    os.remove(fpath)
+                    return render_template('create_task.html', title='Создать задачу',
+                                           form=form, message=f"Ошибка: отсутствует файл {out_name}")
+
+                in_data = zf.read(in_name).decode("utf-8").strip()
+                out_data = zf.read(out_name).decode("utf-8").strip()
+                tests.append((i, in_data, out_data))
+
+        os.remove(fpath)
+
+        db_session = session_factory()
+
+        task = TaskTable(
+            title=form.title.data,
+            time_limit=form.time_limit.data,
+            description=form.description.data,
+            input_info=form.input_info.data,
+            output_info=form.output_info.data,
+            author_id=current_user.user_id
+        )
+
+        # https: // stackoverflow.com / questions / 1316952 / sqlalchemy - flush - and -get - inserted - id
+        db_session.add(task)
+        db_session.flush()
+        db_session.refresh(task)
+
+        task_id = task.task_id
+
+        for test_tup in tests:
+            test = TestTable(
+                task_id=task_id,
+                test_num=test_tup[0],
+                input_data=test_tup[1],
+                output_data=test_tup[2],
+                is_open=False
+            )
+            db_session.add(test)
+
+        db_session.commit()
+
+        return redirect("/groups")
+
+    return render_template('create_task.html', title='Создать задачу', form=form)
 
 @app.route('/join', methods=['GET', 'POST'])
 def join():

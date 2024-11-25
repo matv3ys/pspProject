@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, FileField, EmailField, StringField
+from wtforms import BooleanField, FileField, EmailField, StringField, IntegerField, TextAreaField
 from wtforms import PasswordField, SubmitField
 from wtforms.fields.numeric import IntegerField
 from wtforms.validators import DataRequired, Email
@@ -37,3 +37,16 @@ class CreateGroupForm(FlaskForm):
 
     name = StringField('Имя группы', validators=[DataRequired("Введите название группы")])
     submit = SubmitField('Создать группу')
+
+
+class CreateTaskForm(FlaskForm):
+    """ форма создания задачи """
+
+    title = StringField('Название задачи', validators=[DataRequired("Введите название задачи")])
+    time_limit = IntegerField('Ограничение по времени (мс)',
+                              validators=[DataRequired("Введите ограничение по времени в миллисекундах")])
+    description = TextAreaField('Условие задачи', validators=[DataRequired("Введите условие задачи")])
+    input_info = TextAreaField('Ожидаемый ввод', validators=[DataRequired("Введите ожидаемые входные данные")])
+    output_info = TextAreaField('Ожидаемый вывод', validators=[DataRequired("Введите ожидаемые выходные данные")])
+    tests = FileField("Тесты", validators=[DataRequired("Загрузите .zip архив с тестами")])
+    submit = SubmitField('Создать задачу')
