@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <h1>{{title}}</h1>
+            <form action="" method="post" enctype="multipart/form-data" novalidate>
+                {{ form.hidden_tag() }}
+                {{ form.csrf_token }}
+                <p>
+                    {{ form.title.label }}<br>
+                    {{ form.title(class="form-control") }}<br>
+                    {% for error in form.title.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.time_limit.label }}<br>
+                    {{ form.time_limit(class="form-control") }}<br>
+                    {% for error in form.time_limit.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.description.label }}<br>
+                    {{ form.description(class="form-control") }}<br>
+                    {% for error in form.description.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.input_info.label }}<br>
+                    {{ form.input_info(class="form-control") }}<br>
+                    {% for error in form.input_info.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.output_info.label }}<br>
+                    {{ form.output_info(class="form-control") }}<br>
+                    {% for error in form.output_info.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+                <p style="color:red">{{message}}</p><br>
+                <h1>Открытые тесты</h1><br>
+                {% for test in opened_tests %}
+                <h5>Тест {{test.test_num}}</h5>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Ввод</th>
+                      <th scope="col">Вывод</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{{test.input_data}}</td>
+                      <td>{{test.output_data}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <a class="btn btn-danger" href="?action=hide&test_id={{test.test_id}}">
+                      Закрыть
+                </a><br><br>
+                {% endfor %}
+                <h1>Закрытые тесты</h1><br>
+                {% for test in closed_tests %}
+                <h5>Тест {{test.test_num}}</h5>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Ввод</th>
+                      <th scope="col">Вывод</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{{test.input_data}}</td>
+                      <td>{{test.output_data}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <a class="btn btn-success" href="?action=show&test_id={{test.test_id}}">
+                      Открыть
+                </a><br><br>
+                {% endfor %}
+
+
+            </form>
+        </main>
+    </section>
+</div>
+{% endblock %}

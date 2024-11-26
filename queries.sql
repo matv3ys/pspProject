@@ -4,6 +4,10 @@ select * from "UserGroupTable"
 
 select * from "UserTable"
 
+select * from "TaskTable"
+
+select * from "TestTable"
+
 select "GroupTable".group_id, "UserGroupTable".user_id, "UserGroupTable".status
 from "GroupTable"
 left join "UserGroupTable"

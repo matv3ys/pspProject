@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="container mt-4">
+              <div class="column">
+                <h1>Мои задачи</h1>
+                {% if current_user.is_authenticated and current_user.is_organizer %}
+                <div style="margin-bottom: 20px;" >
+                  <a class="btn btn-success" href="/create_task">
+                      Создать задачу
+                  </a><br>
+                </div>
+                {% endif %}
+
+                {% for task in user_tasks %}
+                  <div class="col-12 mb-4">
+                      <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title"><a href="/task?task_id={{task.task_id}}">{{task.task_id}}: {{task.title}}</a></h5>
+                              <p class="card-text">Ограничение по времени: {{task.time_limit}} мс</p>
+                          </div>
+                      </div>
+                  </div>
+                {% endfor %}
+                <h1>Все задачи</h1>
+                {% for task in other_tasks %}
+                  <div class="col-12 mb-4">
+                      <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title"><a href="/task?task_id={{task.task_id}}">{{task.task_id}}: {{task.title}}</a></h5>
+                              <p class="card-text">Ограничение по времени: {{task.time_limit}} мс</p>
+                          </div>
+                      </div>
+                  </div>
+                {% endfor %}
+              </div>
+          </div>
+        </main>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <br><h1>{{task.title}}</h1><br>
+            {% if current_user.is_authenticated and current_user.is_organizer and current_user.user_id == task.author_id %}
+                <div style="margin-bottom: 20px;" >
+                  <a class="btn btn-success" href="/edit_task/{{task.task_id}}">
+                      Редактировать задачу
+                  </a><br>
+                </div>
+            {% endif %}
+            <h5>Ограничение по времени: {{ task.time_limit }} мс</h5><br>
+            <h5>Условие</h5>
+            <p>{{task.description}}</p><br>
+            <h5>Формат ввода</h5>
+            <p>{{task.input_info}}</p><br>
+            <h5>Формат вывода</h5>
+            <p>{{task.output_info}}</p><br>
+            {% for test in tests %}
+            <h5>Пример {{loop.index}}</h5>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Ввод</th>
+                  <th scope="col">Вывод</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{test.input_data}}</td>
+                  <td>{{test.output_data}}</td>
+                </tr>
+              </tbody>
+            </table><br>
+            {% endfor %}
+        </main>
+    </section>
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@ import zipfile
 from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function
+from sqlalchemy.testing import db_spec
 
 from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm
 from database import session_factory
@@ -221,8 +222,24 @@ def manage_group_button():
 
     return redirect(f"/manage_group?group_name={group_name}&group_id={group_id}")
 
+@app.route('/tasks', methods=['GET', 'POST'])
+def tasks():
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    db_session = session_factory()
+
+    tasks = db_session.query(TaskTable).all()
+
+    user_tasks = [task for task in tasks if task.author_id == current_user.user_id]
+    other_tasks = [task for task in tasks if task.author_id != current_user.user_id]
+
+    return render_template("tasks.html", user_tasks=user_tasks,
+                           other_tasks=other_tasks, title='Задачи')
+
 
 @app.route('/create_task', methods=['GET', 'POST'])
+@login_required
 def create_task():
     """ обработчик создания группы """
 
@@ -293,9 +310,82 @@ def create_task():
 
         db_session.commit()
 
-        return redirect("/groups")
+        return redirect("/tasks")
 
     return render_template('create_task.html', title='Создать задачу', form=form)
+
+
+@app.route('/task', methods=['GET', 'POST'])
+def task():
+    task_id = int(request.args.get("task_id"))
+
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    db_session = session_factory()
+
+    task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
+    if not task:
+        abort(404)
+
+    tests = db_session.query(TestTable).where((TestTable.task_id == task_id) & (TestTable.is_open == True)).all()
+
+    return render_template('task.html', title=task.title, task=task, tests=tests,
+                           css=url_for('static', filename='css/task_style.css'))
+
+@app.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
+@login_required
+def edit_task(task_id):
+    action = request.args.get("action")
+    test_id = int(request.args.get("test_id"))
+
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    form = CreateTaskForm()
+
+    db_session = session_factory()
+
+    task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
+    if task is None:
+        abort(404)
+    elif task.author_id != current_user.user_id:
+        abort(403)
+
+    form.title.data = task.title
+    form.time_limit.data = task.time_limit
+    form.description.data = task.description
+    form.input_info.data = task.input_info
+    form.output_info.data = task.output_info
+    form.submit.label.text = "Сохранить изменения"
+
+    if action == "hide" and test_id is not None:
+        test = db_session.query(TestTable).where(TestTable.test_id == test_id).first()
+        if test is not None:
+            test.is_open = False
+    if action == "show" and test_id is not None:
+        test = db_session.query(TestTable).where(TestTable.test_id == test_id).first()
+        if test is not None:
+            test.is_open = True
+
+    db_session.flush()
+
+
+    opened_tests = db_session.query(TestTable).where(
+        (TestTable.task_id == task_id) & (TestTable.is_open == True)
+    ).all()
+    opened_tests.sort(key=lambda x: x.test_num)
+    closed_tests = db_session.query(TestTable).where(
+        (TestTable.task_id == task_id) & (TestTable.is_open == False)
+    ).all()
+    closed_tests.sort(key=lambda x: x.test_num)
+
+    db_session.commit()
+
+    return render_template('edit_task.html', title='Редактирование задачи',
+                           form=form, opened_tests=opened_tests, closed_tests=closed_tests,
+                           css=url_for('static', filename='css/edit_task_style.css'))
+
 
 @app.route('/join', methods=['GET', 'POST'])
 def join():
