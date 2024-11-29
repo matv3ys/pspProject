@@ -337,7 +337,7 @@ def task():
 @login_required
 def edit_task(task_id):
     action = request.args.get("action")
-    test_id = int(request.args.get("test_id"))
+    test_id = request.args.get("test_id")
 
     if not (current_user.is_authenticated and current_user.is_organizer):
         return redirect('/')
@@ -352,18 +352,28 @@ def edit_task(task_id):
     elif task.author_id != current_user.user_id:
         abort(403)
 
-    form.title.data = task.title
-    form.time_limit.data = task.time_limit
-    form.description.data = task.description
-    form.input_info.data = task.input_info
-    form.output_info.data = task.output_info
-    form.submit.label.text = "Сохранить изменения"
+
+    if form.is_submitted():
+        task.title = form.title.data
+        task.time_limit = form.time_limit.data
+        task.description = form.description.data
+        task.input_info = form.input_info.data
+        task.output_info = form.output_info.data
+    else:
+        form.title.data = task.title
+        form.time_limit.data = task.time_limit
+        form.description.data = task.description
+        form.input_info.data = task.input_info
+        form.output_info.data = task.output_info
+        form.submit.label.text = "Сохранить изменения"
 
     if action == "hide" and test_id is not None:
+        test_id = int(test_id)
         test = db_session.query(TestTable).where(TestTable.test_id == test_id).first()
         if test is not None:
             test.is_open = False
-    if action == "show" and test_id is not None:
+    elif action == "show" and test_id is not None:
+        test_id = int(test_id)
         test = db_session.query(TestTable).where(TestTable.test_id == test_id).first()
         if test is not None:
             test.is_open = True
