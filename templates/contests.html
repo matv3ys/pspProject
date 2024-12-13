@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="container mt-4">
+              <div class="column">
+                <h1>Мои контесты</h1>
+                {% if current_user.is_authenticated and current_user.is_organizer %}
+                <div style="margin-bottom: 20px;" >
+                  <a class="btn btn-success" href="/create_contest">
+                      Создать контест
+                  </a><br>
+                </div>
+                {% endif %}
+
+                {% for contest in user_contests %}
+                  <div class="col-12 mb-4">
+                      <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">
+                                  {% if contest.author_id == current_user.user_id %}
+                                    <a href="/manage_contest/{{contest.contest_id}}">
+                                  {% else %}
+                                    <a href="/contest/{{contest.contest_id}}">
+                                  {% endif %}
+                                  {{contest.contest_id}}: {{contest.name}}</a>
+                              </h5>
+                              <p class="card-text">{{contest.description}}</p>
+                              <p class="card-text">Начало: {{contest.start_time}}</p>
+                              <p class="card-text">Конец: {{contest.end_time}}</p>
+                          </div>
+                      </div>
+                  </div>
+                {% endfor %}
+              </div>
+          </div>
+        </main>
+    </section>
+</div>
+{% endblock %}

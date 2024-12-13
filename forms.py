@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, FileField, EmailField, StringField, IntegerField, TextAreaField
+from wtforms import BooleanField, FileField, EmailField, StringField, IntegerField, TextAreaField, DateTimeField
 from wtforms import PasswordField, SubmitField
 from wtforms.fields.numeric import IntegerField
 from wtforms.validators import DataRequired, Email
@@ -50,3 +50,14 @@ class CreateTaskForm(FlaskForm):
     output_info = TextAreaField('Ожидаемый вывод', validators=[DataRequired("Введите ожидаемые выходные данные")])
     tests = FileField("Тесты", validators=[DataRequired("Загрузите .zip архив с тестами")])
     submit = SubmitField('Создать задачу')
+
+class CreateContestForm(FlaskForm):
+    """ форма создания контеста """
+
+    name = StringField('Название контеста', validators=[DataRequired("Введите название контеста")])
+    description = TextAreaField('Описание контеста', validators=[DataRequired("Введите описание контеста")])
+
+    start_time = DateTimeField('Время начала (%Y-%m-%d %H:%M)', format='%Y-%m-%d %H:%M', validators=[DataRequired("Некорректный формат")])
+    end_time = DateTimeField('Время окончания (%Y-%m-%d %H:%M)', format='%Y-%m-%d %H:%M', validators=[DataRequired("Некорректный формат")])
+
+    submit = SubmitField('Создать контест')

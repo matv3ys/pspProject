@@ -7,11 +7,11 @@ import zipfile
 from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function
-from sqlalchemy.testing import db_spec
+from sqlalchemy.testing import db_spec, startswith_
 
-from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm
+from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm, CreateContestForm
 from database import session_factory
-from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable
+from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -395,6 +395,82 @@ def edit_task(task_id):
     return render_template('edit_task.html', title='Редактирование задачи',
                            form=form, opened_tests=opened_tests, closed_tests=closed_tests,
                            css=url_for('static', filename='css/edit_task_style.css'))
+
+@app.route('/contests', methods=['GET'])
+def contests():
+    if not current_user.is_authenticated:
+        return redirect('/')
+
+    db_session = session_factory()
+    if current_user.is_organizer:
+        user_contests = db_session.query(
+            ContestTable
+        ).where(
+            ContestTable.author_id == current_user.user_id
+        ).all()
+    else:
+        user_contests = []
+    print()
+
+
+
+    # user_id = session["user_id"]
+    # db_session = session_factory()
+    #
+    # groups = db_session.query(
+    #     GroupTable.group_id,
+    #     GroupTable.group_name,
+    #     UserGroupTable.status,
+    #     GroupTable.owner_id,
+    #     UserTable.name,
+    #     UserTable.surname
+    # ).join(
+    #     UserGroupTable,
+    #     (GroupTable.group_id == UserGroupTable.group_id) & (UserGroupTable.user_id == current_user.user_id),
+    #     isouter=True
+    # ).join(
+    #     UserTable,
+    #     GroupTable.owner_id == UserTable.user_id,
+    #     isouter=True
+    # ).all()
+    #
+    # user_groups = [GroupInfo(i) for i in groups if i[2] == 2 or i[3] == current_user.user_id]
+    # other_groups = [GroupInfo(i) for i in groups if i[2] != 2]
+
+    return render_template("contests.html", user_contests=user_contests,
+                           other_contests=[], title='Контесты')
+
+@app.route('/create_contest', methods=['GET', 'POST'])
+def create_contest():
+    """ обработчик создания контеста """
+
+    if not (current_user.is_authenticated and current_user.is_organizer):
+        return redirect('/')
+
+    form = CreateContestForm()
+    if form.validate_on_submit():
+        with session_factory() as db_session:
+            if form.start_time.data >= form.end_time.data:
+                return render_template('create_contest.html',
+                                       title='Создать контест',
+                                       form=form,
+                                       message="Ошибка: время начала >= время окончания")
+
+            contest = ContestTable(
+                name=form.name.data,
+                description=form.description.data,
+                author_id=current_user.user_id,
+                start_time=form.start_time.data,
+                end_time=form.end_time.data
+            )
+
+            db_session.add(contest)
+            db_session.commit()
+        return redirect("/contests")
+
+    return render_template('create_contest.html', title='Создать контест', form=form)
+
+
 
 
 @app.route('/join', methods=['GET', 'POST'])
