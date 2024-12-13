@@ -49,6 +49,12 @@ class UserTable(Base, UserMixin):
         secondary="UserGroupTable", back_populates="members"
     )
 
+class ContestGroupTable(Base):
+    __tablename__ = "ContestGroupTable"
+
+    contest_id: Mapped[intpk] = mapped_column(ForeignKey("ContestTable.contest_id"))
+    group_id: Mapped[intpk] = mapped_column(ForeignKey("GroupTable.group_id"))
+
 class GroupTable(Base):
     __tablename__ = "GroupTable"
 
@@ -58,6 +64,9 @@ class GroupTable(Base):
     created_at:      Mapped[created_at]
     members: Mapped[List[UserTable]] = relationship(
         secondary="UserGroupTable", back_populates="groups"
+    )
+    contests: Mapped[List[lambda: ContestTable]] = relationship(  # lambda for cross declaration
+        secondary="ContestGroupTable", back_populates="groups"
     )
 
 class ContestTaskTable(Base):
@@ -105,8 +114,11 @@ class ContestTable(Base):
     end_time: Mapped[contest_date]
     author_id: Mapped[int_not_unique] = mapped_column(ForeignKey("UserTable.user_id"))
     created_at: Mapped[created_at]
-    tasks: Mapped[List[TaskTable]] = relationship(   # lambda for cross declaration
+    tasks: Mapped[List[TaskTable]] = relationship(
         secondary="ContestTaskTable", back_populates="contests"
+    )
+    groups: Mapped[List[GroupTable]] = relationship(
+        secondary="ContestGroupTable", back_populates="contests"
     )
 
 # https://stackoverflow.com/questions/5756559/how-to-build-many-to-many-relations-using-sqlalchemy-a-good-example

@@ -1,10 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="container mt-4">
+              <div class="column">
+                <h1>{{contest.name}}</h1><br>
+                <h2>Группы</h2>
+                <form action="" method="post" enctype="multipart/form-data" novalidate>
+                {{ group_form.hidden_tag() }}
+                {{ group_form.csrf_token }}
+                <p>
+                    {{ group_form.group_id.label }}<br>
+                    {{ group_form.group_id(class="form-control") }}<br>
+                    {% for error in group_form.group_id.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                {{ group_form.submit1(type="submit", class="btn btn-primary") }}</p>
+                <p style="color:red">{{group_message}}</p>
+                </form>
+                  {% for group in groups %}
+                  <div class="col-12 mb-4">
+                     <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{group.group_id}}: {{group.group_name}}</h5>
+                              <a class="btn btn-danger" href="/manage_contest/{{contest.contest_id}}/delete_group/{{group.group_id}}">
+                                Исключить
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+                  <h2>Участники</h2>
+                  {% for item in members %}
+                  <div class="col-12 mb-4">
+                     <div class="card">
+                          <div class="card-body">
+                              <h5 class="card-title">{{item.surname}} {{item.name}}</h5>
+                              <p class="card-text">@{{item.login}}</p>
+                              <a class="btn btn-danger" href="/manage_group_button?group_name={{group_name}}&group_id={{group_id}}&user_id={{item.user_id}}&action=exclude">
+                                Исключить
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+
+              </div>
+          </div>
+        </main>
+    </section>
+</div>
+{% endblock %}

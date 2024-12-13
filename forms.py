@@ -1,3 +1,4 @@
+from flask import Flask
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, FileField, EmailField, StringField, IntegerField, TextAreaField, DateTimeField
 from wtforms import PasswordField, SubmitField
@@ -61,3 +62,15 @@ class CreateContestForm(FlaskForm):
     end_time = DateTimeField('Время окончания (%Y-%m-%d %H:%M)', format='%Y-%m-%d %H:%M', validators=[DataRequired("Некорректный формат")])
 
     submit = SubmitField('Создать контест')
+
+class AddGroupForm(FlaskForm):
+    """ форма добавления группы в контест """
+
+    group_id = IntegerField("Новая группа участников", validators=[DataRequired("Введите id группы")])
+    submit1 = SubmitField('Добавить группу')
+
+class AddTaskForm(FlaskForm):
+    """ форма добавления задачи в контест """
+
+    group_id = IntegerField("Новая задача", validators=[DataRequired("Введите id задачи")])
+    submit2 = SubmitField('Добавить задачу')

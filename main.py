@@ -9,9 +9,10 @@ from flask_login import LoginManager, login_user, current_user, login_required, 
 from sqlalchemy.sql.functions import register_function
 from sqlalchemy.testing import db_spec, startswith_
 
-from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm, CreateContestForm
+from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm, CreateContestForm, \
+    AddGroupForm, AddTaskForm
 from database import session_factory
-from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable
+from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable, ContestGroupTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -470,7 +471,74 @@ def create_contest():
 
     return render_template('create_contest.html', title='Создать контест', form=form)
 
+def get_groups(c_id):
+    db_session = session_factory()
 
+    groups = db_session.query(
+        GroupTable
+    ).filter(
+        GroupTable.contests.any(ContestTable.contest_id == c_id)
+    ).all()
+
+    return groups
+
+@app.route('/manage_contest/<int:c_id>', methods=['GET', 'POST'])
+def manage_contest(c_id):
+
+    if not current_user.is_authenticated and not current_user.is_organizer:
+        return redirect('/')
+
+    with session_factory() as db_session:
+        contest = db_session.query(ContestTable).where(ContestTable.contest_id == c_id).first()
+        if contest is None or contest.author_id != current_user.user_id:
+            abort(403)
+
+    group_form = AddGroupForm()
+    task_form = AddTaskForm()
+
+    if group_form.submit1.data and group_form.validate_on_submit():
+        group_id = group_form.group_id.data
+        with session_factory() as db_session:
+            group = db_session.query(GroupTable).where(GroupTable.group_id == group_id).first()
+            if group is None:
+                return render_template('manage_contest.html', contest=contest,
+                                group_form=group_form, groups=get_groups(c_id),
+                                tasks=[], title='Управление контестом', group_message="Группа не существует")
+
+            row = db_session.query(ContestGroupTable).filter(
+                ContestGroupTable.group_id == group_id,
+                ContestGroupTable.contest_id == c_id
+            ).first()
+            if not row:
+                row = ContestGroupTable(group_id=group_id, contest_id=c_id)
+                db_session.add(row)
+                db_session.commit()
+            else:
+                return render_template('manage_contest.html', contest=contest,
+                                       group_form=group_form, groups=get_groups(c_id),
+                                       tasks=[], title='Управление контестом', group_message="Группа уже в списке")
+
+    if task_form.submit2.data and task_form.validate_on_submit():
+        print(2)
+
+    return render_template('manage_contest.html', contest=contest,
+                           group_form=group_form,
+                           groups=get_groups(c_id),
+                           tasks=[], title='Управление контестом')
+
+@app.route('/manage_contest/<int:c_id>/delete_group/<int:g_id>', methods=['GET', 'POST'])
+def manage_contest_delete_group(c_id, g_id):
+    with session_factory() as db_session:
+        row = db_session.query(ContestTable.author_id).where(ContestTable.contest_id == c_id).first()
+        if row is None or row[0] != current_user.user_id:
+            abort(403)
+        row = db_session.query(ContestGroupTable).filter(
+            ContestGroupTable.group_id == g_id,
+            ContestGroupTable.contest_id == c_id
+        ).first()
+        db_session.delete(row)
+        db_session.commit()
+    return redirect(f'/manage_contest/{c_id}')
 
 
 @app.route('/join', methods=['GET', 'POST'])
