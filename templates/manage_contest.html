@@ -34,15 +34,28 @@
                       </div>
                   </div>
                   {% endfor %}
-                  <h2>Участники</h2>
-                  {% for item in members %}
+                  <h2>Задачи</h2>
+                  <form action="" method="post" enctype="multipart/form-data" novalidate>
+                    {{ task_form.hidden_tag() }}
+                    {{ task_form.csrf_token }}
+                    <p>
+                        {{ task_form.task_id.label }}<br>
+                        {{ task_form.task_id(class="form-control") }}<br>
+                        {% for error in task_form.task_id.errors %}
+                        <p class="alert alert-danger" role="alert">
+                          {{ error }}
+                        </p>
+                        {% endfor %}
+                    {{ task_form.submit2(type="submit", class="btn btn-primary") }}</p>
+                    <p style="color:red">{{task_message}}</p>
+                  </form>
+                  {% for task in tasks %}
                   <div class="col-12 mb-4">
                      <div class="card">
                           <div class="card-body">
-                              <h5 class="card-title">{{item.surname}} {{item.name}}</h5>
-                              <p class="card-text">@{{item.login}}</p>
-                              <a class="btn btn-danger" href="/manage_group_button?group_name={{group_name}}&group_id={{group_id}}&user_id={{item.user_id}}&action=exclude">
-                                Исключить
+                              <h5 class="card-title">{{task.c_t.num}}: {{task.task.title}}</h5>
+                              <a class="btn btn-danger" href="/manage_contest/{{contest.contest_id}}/delete_task/{{task.c_t.num}}">
+                                Удалить
                               </a>
                           </div>
                       </div>

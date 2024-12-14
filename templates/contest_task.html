@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="Main-content">
+    <section class="Content-unit">
+        <main role="main" class="container">
+            <div class="card">
+            <div class="card-body">
+            <br><h1>{{contest.name}}</h1><br>
+            <div class="d-flex align-items-center">
+                <span class="me-3">Задачи</span>
+                <div class="btn-group">
+                    {% for i in range(len) %}
+                    <a class="btn btn-light" href="/contest/{{contest.contest_id}}/{{i+1}}" role="button">{{i+1}}</a>
+                    {% endfor %}
+                </div>
+            </div></div></div>
+            <div class="card">
+            <div class="card-body">
+            <br><h2>Задача {{num}}: {{task.title}}</h2><br>
+            <h5>Ограничение по времени: {{ task.time_limit }} мс</h5><br>
+            <h5>Условие</h5>
+            <p>{{task.description}}</p><br>
+            <h5>Формат ввода</h5>
+            <p>{{task.input_info}}</p><br>
+            <h5>Формат вывода</h5>
+            <p>{{task.output_info}}</p><br>
+            {% for test in tests %}
+            <h5>Пример {{loop.index}}</h5>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Ввод</th>
+                  <th scope="col">Вывод</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{test.input_data}}</td>
+                  <td>{{test.output_data}}</td>
+                </tr>
+              </tbody>
+            </table><br>
+            {% endfor %}
+            </div></div>
+            <div class="card">
+            <div class="card-body">
+            <h5>Отправить решение</h5>
+            <form action="" method="post" enctype="multipart/form-data" novalidate>
+                {{ form.hidden_tag() }}
+                {{ form.csrf_token }}
+                <p>
+                    {{ form.lang.label }}<br>
+                    {{ form.lang(class="form-control") }}<br>
+                    {% for error in form.lang.errors %}
+                    <p class="alert alert-danger" role="alert">
+                      {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.solution.label }}<br>
+                    {{ form.solution(class="form-control") }}<br>
+                    {% for error in form.solution.errors %}
+                    <p class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </p>
+                    {% endfor %}
+                </p>
+                <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+            </form>
+                </div></div>
+        </main>
+    </section>
+</div>
+{% endblock %}

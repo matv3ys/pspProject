@@ -74,7 +74,7 @@ class ContestTaskTable(Base):
 
     contest_id: Mapped[intpk] = mapped_column(ForeignKey("ContestTable.contest_id"))
     task_id: Mapped[intpk] = mapped_column(ForeignKey("TaskTable.task_id"))
-    num: Mapped[int_unique]
+    num: Mapped[int_not_unique]
 
 class TaskTable(Base):
     __tablename__ = "TaskTable"

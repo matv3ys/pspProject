@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from random import randint
 import uuid
 import os
@@ -6,13 +7,14 @@ import zipfile
 
 from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
-from sqlalchemy.sql.functions import register_function
+from sqlalchemy.sql.functions import register_function, current_date
 from sqlalchemy.testing import db_spec, startswith_
 
 from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm, CreateContestForm, \
-    AddGroupForm, AddTaskForm
+    AddGroupForm, AddTaskForm, SendSumbmissionForm
 from database import session_factory
-from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable, ContestGroupTable
+from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable, ContestGroupTable, \
+    ContestTaskTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -37,6 +39,14 @@ class GroupInfo():
         self.owner_id = item[3]
         self.owner_name = item[4]
         self.owner_surname = item[5]
+
+class TaskInfo():
+    c_t: ContestTaskTable
+    task: TaskTable
+
+    def __init__(self, c_t, task):
+        self.c_t = c_t
+        self.task = task
 
 class UserInfo():
     surname: str
@@ -397,6 +407,23 @@ def edit_task(task_id):
                            form=form, opened_tests=opened_tests, closed_tests=closed_tests,
                            css=url_for('static', filename='css/edit_task_style.css'))
 
+def get_user_contests(user_id):
+    contests_d = dict()
+
+    db_session = session_factory()
+    groups = db_session.query(
+        GroupTable
+    ).filter(
+        GroupTable.members.any(UserTable.user_id == user_id)
+    ).all()
+
+    for group in groups:
+        for contest in group.contests:
+            if contest.contest_id not in contests_d:
+                contests_d[contest.contest_id] = contest
+    return contests_d
+
+
 @app.route('/contests', methods=['GET'])
 def contests():
     if not current_user.is_authenticated:
@@ -410,9 +437,8 @@ def contests():
             ContestTable.author_id == current_user.user_id
         ).all()
     else:
-        user_contests = []
-    print()
-
+        contests_d = get_user_contests(current_user.user_id)
+        user_contests = contests_d.values()
 
 
     # user_id = session["user_id"]
@@ -482,6 +508,23 @@ def get_groups(c_id):
 
     return groups
 
+def get_tasks(c_id):
+    db_session = session_factory()
+
+    tasks = db_session.query(
+        ContestTaskTable,
+        TaskTable
+    ).filter(
+        ContestTaskTable.contest_id == c_id
+    ).join(
+        TaskTable,
+        ContestTaskTable.task_id == TaskTable.task_id,
+        isouter=True
+    ).all()
+    res = [TaskInfo(c_t, task) for c_t, task in tasks]
+    res = sorted(res, key=lambda x: x.c_t.num)
+    return res
+
 @app.route('/manage_contest/<int:c_id>', methods=['GET', 'POST'])
 def manage_contest(c_id):
 
@@ -506,8 +549,9 @@ def manage_contest(c_id):
                 else:
                     message = "Вы не являетесь владельцем данной группы"
                 return render_template('manage_contest.html', contest=contest,
-                                group_form=group_form, groups=get_groups(c_id),
-                                tasks=[], title='Управление контестом', group_message=message)
+                                        group_form=group_form, groups=get_groups(c_id),
+                                        task_form=task_form,
+                                        tasks=get_tasks(c_id), title='Управление контестом', group_message=message)
 
             row = db_session.query(ContestGroupTable).filter(
                 ContestGroupTable.group_id == group_id,
@@ -520,15 +564,49 @@ def manage_contest(c_id):
             else:
                 return render_template('manage_contest.html', contest=contest,
                                        group_form=group_form, groups=get_groups(c_id),
-                                       tasks=[], title='Управление контестом', group_message="Группа уже в списке")
+                                       task_form=task_form,
+                                       tasks=get_tasks(c_id),
+                                       title='Управление контестом', group_message="Группа уже в списке")
 
     if task_form.submit2.data and task_form.validate_on_submit():
-        print(2)
+        task_id = task_form.task_id.data
+        with session_factory() as db_session:
+            task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
+            if task is None:
+                return render_template('manage_contest.html', contest=contest,
+                                       group_form=group_form, groups=get_groups(c_id),
+                                       task_form=task_form,
+                                       tasks=get_tasks(c_id),
+                                       title='Управление контестом', task_message="Задача не существует")
+
+            tasks = db_session.query(
+                ContestTaskTable
+            ).filter(
+                ContestTaskTable.contest_id == c_id
+            ).all()
+            last_num = 0
+            for task in tasks:
+                if task.task_id == task_id:
+                    return render_template('manage_contest.html', contest=contest,
+                                           group_form=group_form, groups=get_groups(c_id),
+                                           task_form=task_form,
+                                           tasks=get_tasks(c_id),
+                                           title='Управление контестом', task_message="Задача уже в списке")
+                if task.num > last_num:
+                    last_num = task.num
+
+            last_num += 1
+            row = ContestTaskTable(task_id=task_id, contest_id=c_id, num=last_num)
+            db_session.add(row)
+            db_session.commit()
+
 
     return render_template('manage_contest.html', contest=contest,
                            group_form=group_form,
                            groups=get_groups(c_id),
-                           tasks=[], title='Управление контестом')
+                           task_form=task_form,
+                           tasks=get_tasks(c_id),
+                           title='Управление контестом')
 
 @app.route('/manage_contest/<int:c_id>/delete_group/<int:g_id>', methods=['GET', 'POST'])
 def manage_contest_delete_group(c_id, g_id):
@@ -543,6 +621,105 @@ def manage_contest_delete_group(c_id, g_id):
         db_session.delete(row)
         db_session.commit()
     return redirect(f'/manage_contest/{c_id}')
+
+@app.route('/manage_contest/<int:c_id>/delete_task/<int:task_num>', methods=['GET', 'POST'])
+def manage_contest_delete_task(c_id, task_num):
+    with session_factory() as db_session:
+        row = db_session.query(ContestTable.author_id).where(ContestTable.contest_id == c_id).first()
+        if row is None or row[0] != current_user.user_id:
+            abort(403)
+        row = db_session.query(ContestTaskTable).filter(
+            ContestTaskTable.num == task_num,
+            ContestTaskTable.contest_id == c_id
+        ).first()
+        db_session.delete(row)
+        tasks = db_session.query(
+            ContestTaskTable
+        ).filter(
+            ContestTaskTable.contest_id == c_id
+        ).all()
+        tasks = sorted(tasks, key=lambda x: x.num)
+        for i in range(len(tasks)):
+            tasks[i].num = i + 1
+        db_session.commit()
+    return redirect(f'/manage_contest/{c_id}')
+
+@app.route('/contest/<int:c_id>', methods=['GET'])
+def contest(c_id):
+    if not current_user.is_authenticated:
+        return redirect('/')
+
+    contests_d = get_user_contests(current_user.user_id)
+
+    contest = contests_d.get(c_id)
+    if contest is None:
+        return render_template('message.html', title='Ошибка',
+                               message="Соревнование не существует или у вас нет доступа")
+
+    current_time = datetime.now()
+    start = contest.start_time
+    end = contest.end_time
+    if current_time < start:
+        return render_template('message.html', title=contest.name,
+                               message="Соревнование еще не началось")
+    if current_time >= end:
+        return render_template('message.html', title=contest.name,
+                               message="Соревнование закончилось")
+
+    if len(contest.tasks) == 0:
+        return render_template('message.html', title=contest.name,
+                               message="В соревновании отсутствуют задачи")
+
+    return redirect(f"/contest/{c_id}/1")
+
+def get_task_id(rows, num):
+    for row in rows:
+        if row.num == num:
+            return row.task_id
+    return None
+
+@app.route('/contest/<int:c_id>/<int:t_num>', methods=['GET', 'POST'])
+def contest_run(c_id, t_num):
+    if not current_user.is_authenticated:
+        return redirect('/')
+
+    contests_d = get_user_contests(current_user.user_id)
+
+    contest = contests_d.get(c_id)
+    if contest is None:
+        return render_template('message.html', title='Ошибка',
+                               message="Соревнование не существует или у вас нет доступа")
+
+    q_of_tasks = 0
+    with session_factory() as db_session:
+        tasks = db_session.query(
+            ContestTaskTable
+        ).filter(
+            ContestTaskTable.contest_id == c_id
+        ).all()
+        q_of_tasks = len(tasks)
+        task_id = get_task_id(tasks, t_num)
+
+    if task_id == None:
+        return render_template('message.html', title='Ошибка',
+                               message="Задача не существует")
+
+    form = SendSumbmissionForm()
+
+    if form.validate_on_submit():
+        pass
+
+    db_session = session_factory()
+    task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
+    if not task:
+        abort(404)
+
+    tests = db_session.query(TestTable).where((TestTable.task_id == task_id) & (TestTable.is_open == True)).all()
+
+    return render_template('contest_task.html', title=contest.name, contest=contest, num=t_num, len=q_of_tasks,
+                           task=task, tests=tests, form=form, css=url_for('static', filename='css/task_style.css'))
+
+
 
 
 @app.route('/join', methods=['GET', 'POST'])

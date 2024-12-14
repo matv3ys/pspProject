@@ -1,9 +1,12 @@
 from flask import Flask
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, FileField, EmailField, StringField, IntegerField, TextAreaField, DateTimeField
+from wtforms import (BooleanField, FileField, EmailField, StringField, IntegerField,
+                     TextAreaField, DateTimeField, SelectField)
 from wtforms import PasswordField, SubmitField
 from wtforms.fields.numeric import IntegerField
 from wtforms.validators import DataRequired, Email
+
+LANG_CHOICES = [('1', 'Python'), ('2', 'C')]
 
 class RegisterForm(FlaskForm):
     """ форма регистрации """
@@ -72,5 +75,12 @@ class AddGroupForm(FlaskForm):
 class AddTaskForm(FlaskForm):
     """ форма добавления задачи в контест """
 
-    group_id = IntegerField("Новая задача", validators=[DataRequired("Введите id задачи")])
+    task_id = IntegerField("Новая задача", validators=[DataRequired("Введите id задачи")])
     submit2 = SubmitField('Добавить задачу')
+
+class SendSumbmissionForm(FlaskForm):
+    """ Форма отправки решения """
+
+    lang = SelectField("Язык", choices=LANG_CHOICES, validators=[DataRequired("Выберите ваш ЯП")])
+    solution = FileField("Файл с решением", validators=[DataRequired("Загрузите файл с решением")])
+    submit = SubmitField('Отправить решение')
