@@ -500,10 +500,14 @@ def manage_contest(c_id):
         group_id = group_form.group_id.data
         with session_factory() as db_session:
             group = db_session.query(GroupTable).where(GroupTable.group_id == group_id).first()
-            if group is None:
+            if group is None or group.owner_id != current_user.user_id:
+                if group is None:
+                    message = "Группа не существует"
+                else:
+                    message = "Вы не являетесь владельцем данной группы"
                 return render_template('manage_contest.html', contest=contest,
                                 group_form=group_form, groups=get_groups(c_id),
-                                tasks=[], title='Управление контестом', group_message="Группа не существует")
+                                tasks=[], title='Управление контестом', group_message=message)
 
             row = db_session.query(ContestGroupTable).filter(
                 ContestGroupTable.group_id == group_id,
