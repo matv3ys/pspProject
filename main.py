@@ -4,17 +4,19 @@ from random import randint
 import uuid
 import os
 import zipfile
+import enum
 
-from flask import Flask, render_template, url_for, redirect, request, abort, session, flash
+from flask import Flask, render_template, url_for, redirect, request, abort, session, flash, Response
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function, current_date
 from sqlalchemy.testing import db_spec, startswith_
 
+from dicts import get_status_code, language_dict, status_dict
 from forms import LoginForm, RegisterForm, RegisterConfForm, CreateGroupForm, CreateTaskForm, CreateContestForm, \
     AddGroupForm, AddTaskForm, SendSumbmissionForm
 from database import session_factory
 from models import UserTable, GroupTable, UserGroupTable, TestTable, TaskTable, ContestTable, ContestGroupTable, \
-    ContestTaskTable
+    ContestTaskTable, SubmissionTable
 from werkzeug.security import generate_password_hash
 
 from utils import send_code_email
@@ -707,7 +709,22 @@ def contest_run(c_id, t_num):
     form = SendSumbmissionForm()
 
     if form.validate_on_submit():
-        pass
+        code = form.solution.data.read().decode().strip()
+        lang = int(form.lang.data)
+
+        with session_factory() as db_session:
+            submission = SubmissionTable(
+                task_id=task_id,
+                contest_id=c_id,
+                user_id=current_user.user_id,
+                code=code,
+                language=lang,
+                status=get_status_code("Waiting")
+            )
+
+            db_session.add(submission)
+            db_session.commit()
+        return redirect(f'/contest/{c_id}/{t_num}')
 
     db_session = session_factory()
     task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
@@ -715,10 +732,39 @@ def contest_run(c_id, t_num):
         abort(404)
 
     tests = db_session.query(TestTable).where((TestTable.task_id == task_id) & (TestTable.is_open == True)).all()
+    submissions = db_session.query(SubmissionTable).where(
+        (SubmissionTable.user_id == current_user.user_id) &
+        (SubmissionTable.task_id == task_id) &
+        (SubmissionTable.contest_id == c_id)
+    ).all()
+    submissions = sorted(submissions, key=lambda x: x.created_at, reverse=True)
+    print()
 
     return render_template('contest_task.html', title=contest.name, contest=contest, num=t_num, len=q_of_tasks,
-                           task=task, tests=tests, form=form, css=url_for('static', filename='css/task_style.css'))
+                           task=task, tests=tests, form=form, css=url_for('static', filename='css/task_style.css'),
+                           submissions=submissions, languages=language_dict, statuses=status_dict)
 
+@app.route('/see_submission/<int:s_id>', methods=['GET'])
+def see_submission(s_id):
+    if not current_user.is_authenticated:
+        return redirect('/')
+
+    submission = None
+    with session_factory() as db_session:
+        submission = db_session.query(
+            SubmissionTable
+        ).where(
+            SubmissionTable.submission_id == s_id
+        ).first()
+
+    if submission is None:
+        abort(404)
+    if submission.user_id != current_user.user_id and not current_user.is_organizer:
+        abort(403)
+
+    content = submission.code
+
+    return Response(content, mimetype='text/plain')
 
 
 

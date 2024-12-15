@@ -12,10 +12,12 @@ from flask_login import UserMixin
 Base = declarative_base()
 intpk = Annotated[int, mapped_column(primary_key=True)]
 int_not_unique = Annotated[int, mapped_column(unique=False)]
+int_not_unique_nullable = Annotated[int, mapped_column(unique=False, nullable=True)]
 int_unique = Annotated[int, mapped_column(unique=True)]
 float_not_unique = Annotated[float, mapped_column(unique=False)]
 str_unique = Annotated[str, mapped_column(unique=True)]
 str_not_unique = Annotated[str, mapped_column(unique=False)]
+str_not_unique_nullable = Annotated[str, mapped_column(unique=False, nullable=True)]
 bool_not_unique = Annotated[bool, mapped_column(unique=False, nullable=False)]
 created_at = Annotated[datetime.datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]
 contest_date = Annotated[datetime.datetime, mapped_column(nullable=False)]
@@ -120,6 +122,20 @@ class ContestTable(Base):
     groups: Mapped[List[GroupTable]] = relationship(
         secondary="ContestGroupTable", back_populates="contests"
     )
+
+class SubmissionTable(Base):
+    __tablename__ = "SubmissionTable"
+
+    submission_id: Mapped[intpk]
+    task_id: Mapped[int_not_unique] = mapped_column(ForeignKey("TaskTable.task_id"))
+    user_id: Mapped[int_not_unique] = mapped_column(ForeignKey("UserTable.user_id"))
+    contest_id: Mapped[int_not_unique] = mapped_column(ForeignKey("ContestTable.contest_id"))
+    code: Mapped[str_not_unique]
+    language: Mapped[int_not_unique]
+    status: Mapped[int_not_unique]
+    output: Mapped[str_not_unique_nullable]
+    created_at: Mapped[created_at]
+
 
 # https://stackoverflow.com/questions/5756559/how-to-build-many-to-many-relations-using-sqlalchemy-a-good-example
 # https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many

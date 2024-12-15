@@ -6,7 +6,13 @@ from wtforms import PasswordField, SubmitField
 from wtforms.fields.numeric import IntegerField
 from wtforms.validators import DataRequired, Email
 
-LANG_CHOICES = [('1', 'Python'), ('2', 'C')]
+from dicts import language_dict
+
+def create_lang_choices():
+    res = []
+    for k, v in language_dict.items():
+        res.append((str(k), v))
+    return res
 
 class RegisterForm(FlaskForm):
     """ форма регистрации """
@@ -81,6 +87,6 @@ class AddTaskForm(FlaskForm):
 class SendSumbmissionForm(FlaskForm):
     """ Форма отправки решения """
 
-    lang = SelectField("Язык", choices=LANG_CHOICES, validators=[DataRequired("Выберите ваш ЯП")])
+    lang = SelectField("Язык", choices=create_lang_choices(), validators=[DataRequired("Выберите ваш ЯП")])
     solution = FileField("Файл с решением", validators=[DataRequired("Загрузите файл с решением")])
     submit = SubmitField('Отправить решение')

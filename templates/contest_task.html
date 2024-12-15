@@ -68,8 +68,35 @@
                     {% endfor %}
                 </p>
                 <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
-            </form>
-                </div></div>
+            </form><br>
+            <h5>Мои решения</h5><br>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th scope="col">id</th>
+                  <th scope="col">Язык</th>
+                  <th scope="col">Время (мс)</th>
+                  <th scope="col">Статус</th>
+                </tr>
+              </thead>
+              {% for submission in submissions %}
+                <tr>
+                  <th scope="row">
+                  <a href="/see_submission/{{submission.submission_id}}">
+                      {{submission.submission_id}}
+                  </a>
+                  </th>
+                  <td>{{languages[submission.language]}}</td>
+                  {% if submission.exec_time %}
+                    <td>{{submission.exec_time}}</td>
+                  {% else %}
+                    <td>...</td>
+                  {% endif %}
+                  <td>{{statuses[submission.status]}}</td>
+                </tr>
+              {% endfor %}
+            </table>
+            </div></div>
         </main>
     </section>
 </div>
