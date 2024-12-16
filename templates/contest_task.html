@@ -75,7 +75,6 @@
                 <tr>
                   <th scope="col">id</th>
                   <th scope="col">Язык</th>
-                  <th scope="col">Время (мс)</th>
                   <th scope="col">Статус</th>
                 </tr>
               </thead>
@@ -87,12 +86,7 @@
                   </a>
                   </th>
                   <td>{{languages[submission.language]}}</td>
-                  {% if submission.exec_time %}
-                    <td>{{submission.exec_time}}</td>
-                  {% else %}
-                    <td>...</td>
-                  {% endif %}
-                  <td>{{statuses[submission.status]}}</td>
+                  <td><a href="/see_submission_out/{{submission.submission_id}}">{{statuses[submission.status]}}</a></td>
                 </tr>
               {% endfor %}
             </table>

@@ -372,6 +372,7 @@ def edit_task(task_id):
         task.description = form.description.data
         task.input_info = form.input_info.data
         task.output_info = form.output_info.data
+        form.submit.label.text = "Сохранить изменения"
     else:
         form.title.data = task.title
         form.time_limit.data = task.time_limit
@@ -763,6 +764,28 @@ def see_submission(s_id):
         abort(403)
 
     content = submission.code
+
+    return Response(content, mimetype='text/plain')
+
+@app.route('/see_submission_out/<int:s_id>', methods=['GET'])
+def see_submission_out(s_id):
+    if not current_user.is_authenticated:
+        return redirect('/')
+
+    submission = None
+    with session_factory() as db_session:
+        submission = db_session.query(
+            SubmissionTable
+        ).where(
+            SubmissionTable.submission_id == s_id
+        ).first()
+
+    if submission is None:
+        abort(404)
+    if submission.user_id != current_user.user_id and not current_user.is_organizer:
+        abort(403)
+
+    content = submission.output
 
     return Response(content, mimetype='text/plain')
 

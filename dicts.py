@@ -1,6 +1,7 @@
 language_dict = {
     1: "Python",
-    2: "C"
+    2: "C",
+    3: "C++"
 }
 
 status_dict = {
