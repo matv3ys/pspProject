@@ -7,6 +7,48 @@
             <div class="container mt-4">
               <div class="column">
                 <h1>{{contest.name}}</h1><br>
+                <form action="" method="post" enctype="multipart/form-data" novalidate>
+                    {{ contest_form.hidden_tag() }}
+                    {{ contest_form.csrf_token }}
+                    <p>
+                        {{ contest_form.name.label }}<br>
+                        {{ contest_form.name(class="form-control") }}<br>
+                        {% for error in contest_form.name.errors %}
+                        <p class="alert alert-danger" role="alert">
+                          {{ error }}
+                        </p>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        {{ contest_form.description.label }}<br>
+                        {{ contest_form.description(class="form-control") }}<br>
+                        {% for error in contest_form.description.errors %}
+                        <p class="alert alert-danger" role="alert">
+                          {{ error }}
+                        </p>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        {{ contest_form.start_time.label }}<br>
+                        {{ contest_form.start_time(class="form-control") }}<br>
+                        {% for error in contest_form.start_time.errors %}
+                        <p class="alert alert-danger" role="alert">
+                          {{ error }}
+                        </p>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        {{ contest_form.end_time.label }}<br>
+                        {{ contest_form.end_time(class="form-control", id="datetimepicker") }}<br>
+                        {% for error in contest_form.end_time.errors %}
+                        <p class="alert alert-danger" role="alert">
+                          {{ error }}
+                        </p>contest_
+                        {% endfor %}
+                    </p>
+                    <p>{{ contest_form.submit(type="submit", class="btn btn-primary") }}</p>
+                    <p style="color:red">{{contest_message}}</p>
+                </form><br>
                 <h2>Группы</h2>
                 <form action="" method="post" enctype="multipart/form-data" novalidate>
                 {{ group_form.hidden_tag() }}

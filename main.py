@@ -444,29 +444,6 @@ def contests():
         user_contests = contests_d.values()
 
 
-    # user_id = session["user_id"]
-    # db_session = session_factory()
-    #
-    # groups = db_session.query(
-    #     GroupTable.group_id,
-    #     GroupTable.group_name,
-    #     UserGroupTable.status,
-    #     GroupTable.owner_id,
-    #     UserTable.name,
-    #     UserTable.surname
-    # ).join(
-    #     UserGroupTable,
-    #     (GroupTable.group_id == UserGroupTable.group_id) & (UserGroupTable.user_id == current_user.user_id),
-    #     isouter=True
-    # ).join(
-    #     UserTable,
-    #     GroupTable.owner_id == UserTable.user_id,
-    #     isouter=True
-    # ).all()
-    #
-    # user_groups = [GroupInfo(i) for i in groups if i[2] == 2 or i[3] == current_user.user_id]
-    # other_groups = [GroupInfo(i) for i in groups if i[2] != 2]
-
     return render_template("contests.html", user_contests=user_contests,
                            other_contests=[], title='Контесты')
 
@@ -539,10 +516,44 @@ def manage_contest(c_id):
         if contest is None or contest.author_id != current_user.user_id:
             abort(403)
 
+    contest_form = CreateContestForm()
     group_form = AddGroupForm()
     task_form = AddTaskForm()
 
+    if contest_form.submit.data and contest_form.validate_on_submit():
+        print(1)
+        with session_factory() as db_session:
+            if contest_form.start_time.data >= contest_form.end_time.data:
+                return render_template('manage_contest.html', contest=contest,
+                                       contest_form=contest_form,
+                                       group_form=group_form, groups=get_groups(c_id),
+                                       task_form=task_form,
+                                       tasks=get_tasks(c_id), title='Управление контестом',
+                                       contest_message="Ошибка: время начала >= время окончания")
+
+            contest = db_session.query(
+                ContestTable
+            ).where(
+                ContestTable.contest_id == c_id
+            ).first()
+
+            contest.name = contest_form.name.data
+            contest.description = contest_form.description.data
+            contest.start_time = contest_form.start_time.data
+            contest.end_time = contest_form.end_time.data
+
+            db_session.commit()
+
+        return redirect(f'/manage_contest/{c_id}')
+    else:
+        contest_form.name.data = contest.name
+        contest_form.description.data = contest.description
+        contest_form.start_time.data = contest.start_time
+        contest_form.end_time.data = contest.end_time
+        contest_form.submit.label.text = "Сохранить изменения"
+
     if group_form.submit1.data and group_form.validate_on_submit():
+        print(2)
         group_id = group_form.group_id.data
         with session_factory() as db_session:
             group = db_session.query(GroupTable).where(GroupTable.group_id == group_id).first()
@@ -551,7 +562,7 @@ def manage_contest(c_id):
                     message = "Группа не существует"
                 else:
                     message = "Вы не являетесь владельцем данной группы"
-                return render_template('manage_contest.html', contest=contest,
+                return render_template('manage_contest.html', contest=contest, contest_form=contest_form,
                                         group_form=group_form, groups=get_groups(c_id),
                                         task_form=task_form,
                                         tasks=get_tasks(c_id), title='Управление контестом', group_message=message)
@@ -565,18 +576,19 @@ def manage_contest(c_id):
                 db_session.add(row)
                 db_session.commit()
             else:
-                return render_template('manage_contest.html', contest=contest,
+                return render_template('manage_contest.html', contest=contest, contest_form=contest_form,
                                        group_form=group_form, groups=get_groups(c_id),
                                        task_form=task_form,
                                        tasks=get_tasks(c_id),
                                        title='Управление контестом', group_message="Группа уже в списке")
 
     if task_form.submit2.data and task_form.validate_on_submit():
+        print(3)
         task_id = task_form.task_id.data
         with session_factory() as db_session:
             task = db_session.query(TaskTable).where(TaskTable.task_id == task_id).first()
             if task is None:
-                return render_template('manage_contest.html', contest=contest,
+                return render_template('manage_contest.html', contest=contest, contest_form=contest_form,
                                        group_form=group_form, groups=get_groups(c_id),
                                        task_form=task_form,
                                        tasks=get_tasks(c_id),
@@ -590,7 +602,7 @@ def manage_contest(c_id):
             last_num = 0
             for task in tasks:
                 if task.task_id == task_id:
-                    return render_template('manage_contest.html', contest=contest,
+                    return render_template('manage_contest.html', contest=contest, contest_form=contest_form,
                                            group_form=group_form, groups=get_groups(c_id),
                                            task_form=task_form,
                                            tasks=get_tasks(c_id),
@@ -604,7 +616,7 @@ def manage_contest(c_id):
             db_session.commit()
 
 
-    return render_template('manage_contest.html', contest=contest,
+    return render_template('manage_contest.html', contest=contest, contest_form=contest_form,
                            group_form=group_form,
                            groups=get_groups(c_id),
                            task_form=task_form,
