@@ -7,6 +7,9 @@
             <div class="container mt-4">
               <div class="column">
                 <h1>{{contest.name}}</h1><br>
+                <a class="btn btn-success" href="/get_stats/{{contest.contest_id}}">
+                    Получить статистику
+                </a><br><br>
                 <form action="" method="post" enctype="multipart/form-data" novalidate>
                     {{ contest_form.hidden_tag() }}
                     {{ contest_form.csrf_token }}

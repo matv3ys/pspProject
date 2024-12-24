@@ -5,8 +5,9 @@ import uuid
 import os
 import zipfile
 import enum
+import tempfile
 
-from flask import Flask, render_template, url_for, redirect, request, abort, session, flash, Response
+from flask import Flask, render_template, url_for, redirect, request, abort, session, flash, Response, send_file
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 from sqlalchemy.sql.functions import register_function, current_date
 from sqlalchemy.testing import db_spec, startswith_
@@ -622,6 +623,60 @@ def manage_contest(c_id):
                            task_form=task_form,
                            tasks=get_tasks(c_id),
                            title='Управление контестом')
+
+@app.route('/get_stats/<int:c_id>', methods=['GET', 'POST'])
+def get_stats(c_id):
+    if not current_user.is_authenticated and not current_user.is_organizer:
+        return redirect('/')
+
+    db_session = session_factory()
+
+    contest = db_session.query(ContestTable).where(ContestTable.contest_id == c_id).first()
+    if contest is None or contest.author_id != current_user.user_id:
+        abort(403)
+    c_t = db_session.query(
+        ContestTaskTable
+    ).where(
+        ContestTaskTable.contest_id == c_id
+    ).all()
+
+    c_t = sorted(c_t, key=lambda x: x.num)
+
+    submissions = db_session.query(
+        SubmissionTable, UserTable
+    ).filter(
+        SubmissionTable.contest_id == c_id
+    ).join(
+        UserTable,
+        SubmissionTable.user_id == UserTable.user_id,
+        isouter=True
+    ).all()
+
+    rows = dict()
+
+    for submission, user in submissions:
+        if status_dict[submission.status] == "OK":
+            if user.login not in rows:
+                rows[user.login] = dict()
+            rows[user.login][submission.task_id] = True
+
+    tmp = tempfile.TemporaryFile()
+    header = "Пользователь,"
+    for task in c_t:
+        header += f"Задача {task.num},"
+    header += "Кол-во решенных задач\n"
+    tmp.write(bytes(header, "utf-8"))
+    for user, data in rows.items():
+        row = f"{user},"
+        for task in c_t:
+            if task.task_id in data:
+                row += "+,"
+            else:
+                row += "-,"
+        row += f"{len(data)}\n"
+        tmp.write(bytes(row, "utf-8"))
+    tmp.seek(0)
+    return send_file(tmp, download_name=f'stats_{c_id}.csv')
 
 @app.route('/manage_contest/<int:c_id>/delete_group/<int:g_id>', methods=['GET', 'POST'])
 def manage_contest_delete_group(c_id, g_id):
